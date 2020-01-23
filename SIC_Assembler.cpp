@@ -1,6 +1,6 @@
 /******************************************************************************
 Abdalla Mahmoud Hiekal
-16101137
+
 
 *******************************************************************************/
 
@@ -18,6 +18,28 @@ ll stringToLL(string s)
     ll res;
     num >> std::hex >>res;
     return res;
+}
+ll stringToLLD(string s)
+{
+    stringstream num(s);
+    ll res;
+    num >>res;
+    return res;
+}
+std::string string_to_hex(const std::string& input)
+{
+    static const char* const lut = "0123456789ABCDEF";
+    size_t len = input.length();
+
+    std::string output;
+    output.reserve(2 * len);
+    for (size_t i = 0; i < len; ++i)
+    {
+        const unsigned char c = input[i];
+        output.push_back(lut[c >> 4]);
+        output.push_back(lut[c & 15]);
+    }
+    return output;
 }
 
 vector<vector<string>> OPTAB (59);
@@ -117,20 +139,28 @@ int main()
     {
         if(opcode[i-1] == "RESW")
         {
-            ll v = stringToLL(data[i-1])*3;
+            ll v = stringToLLD(data[i-1])*3;
+            std::stringstream ss;
+            ss<< std::hex << v; // ll decimal_value
+            ss>>v;
             location_counter[i] = location_counter[i-1]+v;
         }else if(opcode[i-1] == "RESB")
         {
-            ll v = stringToLL(data[i-1]);
+            ll v = stringToLLD(data[i-1]);
+            std::stringstream ss;
+            ss<< std::hex << v; // ll decimal_value
+            ss>>v;
             location_counter[i] = location_counter[i-1]+v;
         }else if(opcode[i-1] == "BYTE")
         {
             ll v;
             if(data[i-1][0] == 'X')
-            v = ((stringToLL(data[i-1])+1)/2);
+			v = (data[i-1].size()-3+1)/2;
             else if(data[i-1][0] == 'C')
-            v = stringToLL(data[i-1]);
-
+			v = data[i-1].size()-3;
+            std::stringstream ss;
+            ss<< std::hex << v; // ll decimal_value
+            ss>>v;
             location_counter[i] = location_counter[i-1]+v;
 
         }else
@@ -168,7 +198,7 @@ int main()
             objcode[i] = res;
        }else if(opcode[i] == "BYTE")
        {
-            string res = s.substr(2,(data[i].size()-2));
+            string res = data[i].substr(2,(data[i].size()-3));
             objcode[i] = res;
        }else
        {
@@ -195,16 +225,25 @@ int main()
             res= opp;
             int j;
             ll temp;
+            bool wannasleep=0;
             for(j=0; j<1000;j++)
             {
-                if(data[i] == label[j])
+                if(search == label[j])
                 {
-                	temp =location_counter[j];
-                    break;
+                	temp =location_counter[j-1];
+                	wannasleep=true;
                 }
             }
+            if(!wannasleep)
+            {
+            	cout<<"Error: Undefiend Lable "<<endl;
+            	return 0;
+            }
 
-            if(flag) temp+=32000;
+            if(flag) { temp+=32768;
+            //cout<<temp<<endl;
+            }
+
             stringstream stream;
             stream << std::hex << temp;
             string addx = stream.str();
@@ -217,7 +256,22 @@ int main()
     for(int i =1; i<t-2; i++)
     {
            cout<< std::hex << location_counter[i]<<" ";
-           cout<<label[i]<<"  "<<opcode[i]<<"  "<<data[i]<<"  "<<setfill ('0') <<setw(6) <<objcode[i]<<endl;
+           if(opcode[i] == "BYTE")
+           {
+        	   if(data[i][0] == 'X')
+        	   {
+        		   cout<<label[i]<<"  "<<opcode[i]<<"  "<<data[i]<<"  "<<setfill ('0') <<objcode[i]<<endl;
+        	   }
+        	   else
+        	   {
+
+        		   cout<<label[i]<<"  "<<opcode[i]<<"  "<<data[i]<<"  "<<setfill ('0') <<string_to_hex(objcode[i])<<endl;
+        	   }
+
+           }else
+           {
+        	   cout<<label[i]<<"  "<<opcode[i]<<"  "<<data[i]<<"  "<<setfill ('0') <<setw(6) <<objcode[i]<<endl;
+           }
     }
     cout<<"........................ HTE Record ........................"<<endl;
     cout<<"H."<< setfill ('0') <<setw(6)<< location_counter[0]<<"."<< setfill ('0') << setw(6)<<location_counter[t-3]-location_counter[0]<<endl;
@@ -234,7 +288,15 @@ int main()
     			cout<<"T."<<setfill ('0') << setw(6)<< location_counter[v[0]] <<"." <<setfill ('0') << setw(2)<< vv;
     			for(int q =0; q<v.size(); q++)
     			{
-    			cout<<"."<<setfill ('0') << setw(6)<< objcode[v[q]];
+    				if(data[v[q]][0] == 'X')
+    				{
+    					cout<<"."<<setfill ('0')<< objcode[v[q]];
+    				}else if(data[v[q]][0] == 'C')
+    				{
+    					cout<<"."<<setfill ('0')<< string_to_hex(objcode[v[q]]);
+
+    				}else
+    					cout<<"."<<setfill ('0') << setw(6)<< objcode[v[q]];
     			}
     			cout<<endl;
     			v.clear();
@@ -247,7 +309,15 @@ int main()
 		cout<<"T."<<setfill ('0') << setw(6)<< location_counter[v[0]] <<"." <<setfill ('0') << setw(2)<< vv;
 		for(int q =0; q<v.size(); q++)
 		{
-		cout<<"."<<setfill ('0') << setw(6)<< objcode[v[q]];
+			if(data[v[q]][0] == 'X')
+			{
+				cout<<"."<<setfill ('0')<< objcode[v[q]];
+			}else if(data[v[q]][0] == 'C')
+			{
+				cout<<"."<<setfill ('0')<< string_to_hex(objcode[v[q]]);
+
+			}else
+				cout<<"."<<setfill ('0') << setw(6)<< objcode[v[q]];
 		}
 	}
     cout<<endl;
